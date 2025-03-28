@@ -29,13 +29,12 @@ const useGetSuggestedUsers = () => {
                 querySnapShot.forEach(doc => {
                     users.push({...doc.data(), id: doc.id})
                 })
-                
                 setSuggestedUsers(users)
             } catch (error) {
                 if(error  instanceof Error){
                     showError("Error:" + error.message)
                 }else{
-                    showError("Some unknown erro occured")
+                    showError("Some unknown error occured")
                 }
                 
             }finally{

@@ -18,7 +18,10 @@ const useFollowUser = (initialUserId: string) => {
 
   const fetchFollowStatus = useCallback(
     async (userId: string) => {
-      if (!authUser || !userId) return;
+      
+      if (!authUser) {
+        return;
+      }
 
       const userRef = doc(db, "users", authUser.uid);
       try {
@@ -91,6 +94,7 @@ const useFollowUser = (initialUserId: string) => {
       } catch (error) {
         if (error instanceof Error) {
           showError(`Error: ${error.message}`);
+          console.error(error.message);
         } else {
           showError("An unknown error occurred.");
         }

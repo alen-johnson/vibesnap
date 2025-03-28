@@ -10,6 +10,7 @@ import {
 } from "firebase/firestore";
 import useShowMessage from "./useShowMessage";
 import useAuthStore from "../store/authStore";
+import { signInWithCustomToken, signInWithEmailAndPassword } from "firebase/auth";
 
 const useSignUpWithEmailAndPassword = () => {
   //@ts-ignore
@@ -34,7 +35,7 @@ const useSignUpWithEmailAndPassword = () => {
       return;
     }
 
-    const uname = formatName(inputs.username)
+    const uname = formatName(inputs.username);
     const usersRef = collection(db, "users");
     const q = query(usersRef, where("username", "==", uname));
     const profSnap = await getDocs(q);
@@ -45,22 +46,13 @@ const useSignUpWithEmailAndPassword = () => {
     }
 
     try {
-      const newUser = await createUserWithEmailAndPassword(
-        inputs.email,
-        inputs.password
-      );
-      if (!newUser && error) {
-        const errorMessage = error?.message || "Something went wrong";
-        showError(errorMessage);
-        return;
-      }
-
-
-      if (newUser) {
-        const userDoc = {
-          uid: newUser.user.uid,
-          email: inputs.email,
+      const res = await fetch("http://localhost:8080/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           username: uname,
+          password: inputs.password,
+          email: inputs.email,
           fullname: inputs.fullname,
           bio: "",
           profilePicURL: "",
@@ -68,14 +60,23 @@ const useSignUpWithEmailAndPassword = () => {
           followers: [],
           following: [],
           createdAt: Date.now(),
-        };
-        console.log(userDoc);
-        await setDoc(doc(db, "users", newUser.user.uid), userDoc);
-        localStorage.setItem("user-info", JSON.stringify(userDoc));
-        loginUser(userDoc);
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.text();
+        showError(data || "Signup failed");
       }
 
-      console.log("user created")
+      const data = await res.json();
+      const { user, firebaseToken } = data;
+      localStorage.setItem("user-info", JSON.stringify(user));
+      loginUser(user);
+      console.log("user created");
+
+      await signInWithCustomToken(auth, firebaseToken);
+
+
     } catch (error) {
       if (error instanceof Error) {
         showError("Error" + error.message);
@@ -89,6 +90,6 @@ const useSignUpWithEmailAndPassword = () => {
 
 export default useSignUpWithEmailAndPassword;
 
-const formatName = (name:string) => {
-
-  return name.split(" ").join("").toLowerCase();}
+const formatName = (name: string) => {
+  return name.split(" ").join("").toLowerCase();
+};
